@@ -30,7 +30,11 @@ namespace examples {
     void AddTrajectoryPoint(MCTrajectory::MCTrajectoryPt point);
     void SetTrajectory(MCTrajectory trajectory);
     void SetEndProcess(std::string endprocess);
-    
+
+    const int & Status() const;
+    const int & Mother() const;
+    const int & TrackID() const;
+
   private:
     int pdgcode_{0},
         status_{0},

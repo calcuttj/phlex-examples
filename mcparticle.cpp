@@ -54,6 +54,9 @@ namespace examples {
   }
 
   const int& MCParticle::GetPDG() const { return pdgcode_; }
+  const int& MCParticle::Mother() const { return mother_; }
+  const int& MCParticle::TrackID() const { return trackid_; }
+  const int& MCParticle::Status() const { return status_; }
 
   // Index into the trajectory; i = 0 is the starting point.
   // Throws std::out_of_range if the point does not exist.
