@@ -18,6 +18,7 @@ find_package(Boost REQUIRED json)
 find_package(TBB REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(phlex REQUIRED)
+find_package(ROOT REQUIRED COMPONENTS Core RIO)
 
 add_subdirectory(migration)
 
@@ -27,6 +28,12 @@ add_compile_options(-Wall -Wpedantic -Werror)
 # N.B. The specified library type should be SHARED.
 add_library(my_add SHARED my_add.cpp)
 add_library(my_geometry SHARED my_geometry.cpp)
+add_library(mcparticle SHARED mcparticle.cpp)
+add_library(mctruth SHARED mctruth.cpp)
+target_include_directories(mctruth PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(mctruth PUBLIC mcparticle ROOT::Core)
+# ROOT dictionary so FORM can write MCTruth (and the MCParticle types it holds)
+root_generate_dictionary(G__mctruth mctruth.hpp mcparticle.hpp MODULE mctruth LINKDEF mctruth_LinkDef.h)
 
 # Register providers for data products
 add_library(numbers_source MODULE numbers_source.cpp)
@@ -49,6 +56,9 @@ target_link_libraries(vector_source PRIVATE phlex::module)
 
 add_library(split_square_verify MODULE split_square_verify.cpp)
 target_link_libraries(split_square_verify PRIVATE phlex::module)
+
+add_library(simple_generator MODULE simple_generator.cpp)
+target_link_libraries(simple_generator PRIVATE phlex::module my_geometry mctruth mcparticle)
 
 # Enable asserts for split_square_verify
 target_compile_options(split_square_verify PRIVATE -UNDEBUG)
