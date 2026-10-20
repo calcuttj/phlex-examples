@@ -19,6 +19,7 @@ find_package(TBB REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(phlex REQUIRED)
 find_package(ROOT REQUIRED COMPONENTS Core RIO)
+find_package(HepMC3 REQUIRED)
 
 add_subdirectory(migration)
 
@@ -34,6 +35,22 @@ target_include_directories(mctruth PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(mctruth PUBLIC mcparticle ROOT::Core)
 # ROOT dictionary so FORM can write MCTruth (and the MCParticle types it holds)
 root_generate_dictionary(G__mctruth mctruth.hpp mcparticle.hpp MODULE mctruth LINKDEF mctruth_LinkDef.h)
+
+# ROOT dictionary so FORM can write HepMC3::GenEvent. HEPMC3_ROOTIO makes the
+# HepMC3 headers declare the custom GenEvent streamer in hepmc3_streamer.cpp;
+# it must be defined wherever those headers are seen, hence PUBLIC.
+add_library(hepmc3_dict SHARED hepmc3_streamer.cpp)
+target_compile_definitions(hepmc3_dict PUBLIC HEPMC3_ROOTIO)
+target_link_libraries(hepmc3_dict PUBLIC HepMC3::HepMC3 ROOT::Core)
+# root_generate_dictionary only searches the target's own include directories
+target_include_directories(hepmc3_dict PRIVATE ${HEPMC3_INCLUDE_DIR})
+root_generate_dictionary(
+  G__hepmc3
+  HepMC3/GenEvent.h
+  HepMC3/Data/GenEventData.h
+  MODULE hepmc3_dict
+  LINKDEF hepmc3_selection.xml
+)
 
 # Register providers for data products
 add_library(numbers_source MODULE numbers_source.cpp)
