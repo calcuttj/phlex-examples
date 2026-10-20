@@ -20,6 +20,9 @@ find_package(spdlog REQUIRED)
 find_package(phlex REQUIRED)
 find_package(ROOT REQUIRED COMPONENTS Core RIO)
 find_package(HepMC3 REQUIRED)
+if(NOT TARGET HepMC3::rootIO)
+  message(FATAL_ERROR "HepMC3 at ${HepMC3_DIR} was built without rootIO (HEPMC3_ENABLE_ROOTIO)")
+endif()
 
 add_subdirectory(migration)
 
@@ -36,18 +39,19 @@ target_link_libraries(mctruth PUBLIC mcparticle ROOT::Core)
 # ROOT dictionary so FORM can write MCTruth (and the MCParticle types it holds)
 root_generate_dictionary(G__mctruth mctruth.hpp mcparticle.hpp MODULE mctruth LINKDEF mctruth_LinkDef.h)
 
-# ROOT dictionary so FORM can write HepMC3::GenEvent. HEPMC3_ROOTIO makes the
-# HepMC3 headers declare the custom GenEvent streamer in hepmc3_streamer.cpp;
-# it must be defined wherever those headers are seen, hence PUBLIC.
-add_library(hepmc3_dict SHARED hepmc3_streamer.cpp)
+# ROOT dictionary so FORM can write HepMC3::GenEvent. libHepMC3rootIO provides
+# GenEvent's custom streamer and the dictionaries for the GenEventData classes
+# it is persisted through, but not a dictionary for GenEvent itself.
+# HEPMC3_ROOTIO makes the HepMC3 headers declare that streamer; it must be
+# defined wherever those headers are seen, hence PUBLIC.
+add_library(hepmc3_dict SHARED)
 target_compile_definitions(hepmc3_dict PUBLIC HEPMC3_ROOTIO)
-target_link_libraries(hepmc3_dict PUBLIC HepMC3::HepMC3 ROOT::Core)
+target_link_libraries(hepmc3_dict PUBLIC HepMC3::rootIO ROOT::Core)
 # root_generate_dictionary only searches the target's own include directories
 target_include_directories(hepmc3_dict PRIVATE ${HEPMC3_INCLUDE_DIR})
 root_generate_dictionary(
   G__hepmc3
   HepMC3/GenEvent.h
-  HepMC3/Data/GenEventData.h
   MODULE hepmc3_dict
   LINKDEF hepmc3_selection.xml
 )

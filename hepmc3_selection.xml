@@ -1,14 +1,8 @@
 <!-- Selection for the ROOT dictionary that lets FORM write HepMC3::GenEvent.
-     GenEvent is written by the custom streamer in hepmc3_streamer.cpp, which
-     persists it via the GenEventData classes below. Its in-memory members are
-     marked transient so ROOT does not try to describe them. -->
+     libHepMC3rootIO provides the custom GenEvent streamer and the dictionaries
+     for the GenEventData classes it is persisted through. GenEvent's in-memory
+     members are marked transient so ROOT does not try to describe them. -->
 <lcgdict>
-  <class name="HepMC3::FourVector" />
-  <class name="HepMC3::GenParticleData" />
-  <class name="std::vector<HepMC3::GenParticleData>" />
-  <class name="HepMC3::GenVertexData" />
-  <class name="std::vector<HepMC3::GenVertexData>" />
-  <class name="HepMC3::GenEventData" />
   <class name="HepMC3::GenEvent" noStreamer="true">
     <field name="m_particles" transient="true" />
     <field name="m_vertices" transient="true" />
