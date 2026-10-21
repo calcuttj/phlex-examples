@@ -20,6 +20,8 @@ find_package(spdlog REQUIRED)
 find_package(phlex REQUIRED)
 find_package(ROOT REQUIRED COMPONENTS Core RIO)
 find_package(HepMC3 REQUIRED)
+# libHepMC3rootIO carries the ROOT dictionaries FORM needs to write
+# HepMC3::GenEventData; ROOT loads it through its rootmap when asked for them.
 if(NOT TARGET HepMC3::rootIO)
   message(FATAL_ERROR "HepMC3 at ${HepMC3_DIR} was built without rootIO (HEPMC3_ENABLE_ROOTIO)")
 endif()
@@ -38,23 +40,6 @@ target_include_directories(mctruth PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(mctruth PUBLIC mcparticle ROOT::Core)
 # ROOT dictionary so FORM can write MCTruth (and the MCParticle types it holds)
 root_generate_dictionary(G__mctruth mctruth.hpp mcparticle.hpp MODULE mctruth LINKDEF mctruth_LinkDef.h)
-
-# ROOT dictionary so FORM can write HepMC3::GenEvent. libHepMC3rootIO provides
-# GenEvent's custom streamer and the dictionaries for the GenEventData classes
-# it is persisted through, but not a dictionary for GenEvent itself.
-# HEPMC3_ROOTIO makes the HepMC3 headers declare that streamer; it must be
-# defined wherever those headers are seen, hence PUBLIC.
-add_library(hepmc3_dict SHARED)
-target_compile_definitions(hepmc3_dict PUBLIC HEPMC3_ROOTIO)
-target_link_libraries(hepmc3_dict PUBLIC HepMC3::rootIO ROOT::Core)
-# root_generate_dictionary only searches the target's own include directories
-target_include_directories(hepmc3_dict PRIVATE ${HEPMC3_INCLUDE_DIR})
-root_generate_dictionary(
-  G__hepmc3
-  HepMC3/GenEvent.h
-  MODULE hepmc3_dict
-  LINKDEF hepmc3_selection.xml
-)
 
 # Register providers for data products
 add_library(numbers_source MODULE numbers_source.cpp)
@@ -80,6 +65,18 @@ target_link_libraries(split_square_verify PRIVATE phlex::module)
 
 add_library(simple_generator MODULE simple_generator.cpp)
 target_link_libraries(simple_generator PRIVATE phlex::module my_geometry mctruth mcparticle)
+
+add_library(simple_generator_hepmc MODULE simple_generator_hepmc.cpp)
+target_link_libraries(simple_generator_hepmc PRIVATE phlex::source HepMC3::HepMC3)
+
+add_library(convert_hepmcevent SHARED convert_hepmcevent.cpp)
+target_link_libraries(convert_hepmcevent PUBLIC HepMC3::HepMC3)
+
+add_library(convert_hepmcevent_to_data MODULE convert_to_data_module.cpp)
+target_link_libraries(convert_hepmcevent_to_data PRIVATE phlex::module convert_hepmcevent)
+
+add_library(convert_hepmcevent_from_data MODULE convert_from_data_module.cpp)
+target_link_libraries(convert_hepmcevent_from_data PRIVATE phlex::module convert_hepmcevent)
 
 # Enable asserts for split_square_verify
 target_compile_options(split_square_verify PRIVATE -UNDEBUG)
