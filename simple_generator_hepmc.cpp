@@ -74,28 +74,11 @@ namespace examples {
   }
 } // namespace examples
 
-
-// PHLEX_REGISTER_ALGORITHMS(m, config)
-// {
-//   using namespace phlex;
-
-//   auto const layer = config.get<std::string>("layer");
-
-//   m.transform("generate", examples::generate_hepmc, concurrency::unlimited)
-//     .input_family(product_selector{.creator = "input", .layer = "job"},
-//                   product_selector{.creator = "input", .layer = layer, .suffix = "i"})
-//     .output_product_suffixes("generator_output");
-
-// }
-
 PHLEX_REGISTER_PROVIDERS(m, config)
 {
     auto const layer = config.get<std::string>("layer");
     auto const suffix = config.get<std::string>("output_suffix", std::string{"genevent"});
     using namespace phlex;
-    
-    // Parses and validates the gun configuration now (fails fast if invalid).
-    // auto gun = std::make_shared<hepmc_phlex::GenEventGun>(config);
 
     m.provide("generate",
               [](data_cell_index const& id) -> HepMC3::GenEvent {
