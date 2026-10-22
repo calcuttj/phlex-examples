@@ -78,5 +78,9 @@ target_link_libraries(convert_hepmcevent_to_data PRIVATE phlex::module convert_h
 add_library(convert_hepmcevent_from_data MODULE convert_from_data_module.cpp)
 target_link_libraries(convert_hepmcevent_from_data PRIVATE phlex::module convert_hepmcevent)
 
+# Builds a HepMC3::GenEvent from the particle table of py_simple_generator_hepmc.py
+add_library(genevent_from_table MODULE genevent_from_table_module.cpp)
+target_link_libraries(genevent_from_table PRIVATE phlex::module HepMC3::HepMC3)
+
 # Enable asserts for split_square_verify
 target_compile_options(split_square_verify PRIVATE -UNDEBUG)

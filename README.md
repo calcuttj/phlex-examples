@@ -123,3 +123,35 @@ Processed layers:
 
 > [!NOTE]
 > For Phlex v0.4.0, Python data products cannot be written to output files.
+
+### Job with a Python event generator
+
+`py_simple_generator_hepmc.py` is a Python port of `simple_generator_hepmc.cpp`.
+Phlex's Python plugin can only pass numbers and 1-D numeric arrays to the rest
+of the workflow, so it cannot return a `HepMC3::GenEvent`. Instead the Python
+source provides a flat particle table, and the C++ module `genevent_from_table`
+turns that table into a `HepMC3::GenEvent`.
+
+The table is one `float64` array per event, with one vertex and outgoing
+particles only, in GeV and cm:
+
+```text
+[event_number, x, y, z, t,  then per particle: pdg, status, px, py, pz, E, mass]
+```
+
+With `PYTHONPATH` set as above, run:
+
+```console
+phlex -c ../phlex-examples/test-py-simple-generator-hepmc-convert-save.jsonnet
+```
+
+This writes the same events as
+`test-simple-generator-hepmc-convert-save.jsonnet`.
+
+`genevent_from_table` is named `input` and outputs suffix `genevent`, the same
+names as the C++ sources, so modules such as `convert_hepmcevent_to_data` and
+`esp_tracking` read its events unchanged. For that reason, don't put another
+source that provides `input`/`genevent` in the same job.
+
+Generator options: `layer`, `position` (vertex in cm, default `[0, 0, 0]`) and
+`muon_angle` (degrees, default `100`).
