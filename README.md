@@ -132,12 +132,18 @@ of the workflow, so it cannot return a `HepMC3::GenEvent`. Instead the Python
 source provides a flat particle table, and the C++ module `genevent_from_table`
 turns that table into a `HepMC3::GenEvent`.
 
-The table is one `float64` array per event, with one vertex and outgoing
-particles only, in GeV and cm:
+The table is one `float64` array per event, in GeV and cm. An event can have
+several vertices, each with any number of outgoing particles; `vertex` is the
+index (from 0) of a particle's production vertex:
 
 ```text
-[event_number, x, y, z, t,  then per particle: pdg, status, px, py, pz, E, mass]
+[event_number, n_vertices,
+ then per vertex: x, y, z, t,
+ then per particle: vertex, pdg, status, px, py, pz, E, mass]
 ```
+
+Build tables with `GenEventTable` from `genevent_table.py` rather than by hand.
+`genevent_from_table` rejects malformed tables with an error.
 
 With `PYTHONPATH` set as above, run:
 
@@ -153,5 +159,12 @@ names as the C++ sources, so modules such as `convert_hepmcevent_to_data` and
 `esp_tracking` read its events unchanged. For that reason, don't put another
 source that provides `input`/`genevent` in the same job.
 
-Generator options: `layer`, `position` (vertex in cm, default `[0, 0, 0]`) and
-`muon_angle` (degrees, default `100`).
+Generator options for `py_simple_generator_hepmc.py`: `layer`, `position`
+(vertex in cm, default `'0 0 0'`) and `muon_angle` (degrees, default `100`).
+`plugin_generator.py` takes `positions` instead, one `'x y z'` string per
+vertex, and generates one interaction at each.
+
+Give positions as strings such as `'0 0 1.5'`. Phlex's Python configuration
+cannot read nested arrays, or numeric arrays that start with an integer and
+later contain a non-integer (for example `[0, 10, 20.5]`). `phlex_config.py`
+reports such values as errors instead of silently using the default.

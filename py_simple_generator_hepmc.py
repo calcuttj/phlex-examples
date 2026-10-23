@@ -2,12 +2,9 @@
 
 Python port of simple_generator_hepmc.cpp.  Phlex's Python plugin can only
 pass numbers and 1-D numeric arrays to the rest of the workflow, so instead of
-a HepMC3::GenEvent this provider returns a flat particle table.  The C++
-transform genevent_from_table turns that table into a HepMC3::GenEvent.
-
-Table layout (float64, GeV and cm), one vertex with outgoing particles only:
-
-    [event_number, x, y, z, t,  then per particle: pdg, status, px, py, pz, E, mass]
+a HepMC3::GenEvent this provider returns a flat event table (see
+genevent_table.py).  The C++ transform genevent_from_table turns that table
+into a HepMC3::GenEvent.
 """
 
 import math
@@ -15,6 +12,8 @@ import math
 import numpy as np
 import numpy.typing as npt
 
+import phlex_config
+from genevent_table import GenEventTable
 from phlex import Variant
 
 
@@ -29,7 +28,7 @@ def generate(
         muon_angle (float): Muon angle to the neutrino direction, in degrees.
 
     Returns:
-        numpy.ndarray: The particle table described in the module docstring.
+        numpy.ndarray: The event table described in genevent_table.py.
     """
     # Assume a 1 GeV neutrino (travelling only in z) strikes an at-rest neutron
     # and produces a muon at a fixed angle: nu + n -> mu + p.
@@ -46,7 +45,8 @@ def generate(
     b = 2.0 * (enu + mn)
     c = mn * mn - mp * mp + mmu * mmu + 2.0 * enu * mn
     d = b * b - a * a
-    # The "+" root is physical; the "-" root fails B*Emu - C >= 0 (spurious from squaring).
+    # Using the signed A (cos(theta) < 0 above 90 degrees) picks the physical root at
+    # any angle: A*pmu = B*Emu - C must have A's sign, which the other root violates.
     emu = (b * c + a * math.sqrt(c * c - mmu * mmu * d)) / d
 
     pmu = math.sqrt(emu * emu - mmu * mmu)
@@ -56,14 +56,13 @@ def generate(
     # enu == pnu == p_proton + p_muon
     pp_z = enu - pmu_z
 
-    x, y, z = position
-    header = [event_number, x, y, z, 0.0]
-    # pdg, status, px, py, pz, E, mass
-    muon = [13, 1, 0.0, pmu_t, pmu_z, emu, mmu]
+    table = GenEventTable(event_number)
+    vtx = table.add_vertex(*position)
+    table.add_particle(vtx, 13, 1, (0.0, pmu_t, pmu_z, emu), mmu)
     # Proton balances out pmu_T (transverse momentum)
     ep = math.sqrt(pp_z * pp_z + pmu_t * pmu_t + mp * mp)
-    proton = [2212, 1, 0.0, -pmu_t, pp_z, ep, mp]
-    return np.asarray(header + muon + proton, dtype=np.float64)
+    table.add_particle(vtx, 2212, 1, (0.0, -pmu_t, pp_z, ep), mp)
+    return table.to_array()
 
 
 def PHLEX_REGISTER_PROVIDERS(s, config):
@@ -76,8 +75,8 @@ def PHLEX_REGISTER_PROVIDERS(s, config):
     Returns:
         None
     """
-    position = tuple(float(v) for v in config.get("position", (0.0, 0.0, 0.0)))
-    muon_angle = float(config.get("muon_angle", 100.0))
+    position = phlex_config.xyz(phlex_config.get(config, "position", "0 0 0"))
+    muon_angle = float(phlex_config.get(config, "muon_angle", 100.0))
 
     def provide(di):
         return generate(di.number(), position, muon_angle)
@@ -90,8 +89,8 @@ def PHLEX_REGISTER_PROVIDERS(s, config):
     s.provide(
         f,
         {
-            "creator": config.get("creator", "pygen"),
+            "creator": phlex_config.get(config, "creator", "pygen"),
             "layer": config["layer"],
-            "suffix": config.get("suffix", "particles"),
+            "suffix": phlex_config.get(config, "suffix", "particles"),
         },
     )

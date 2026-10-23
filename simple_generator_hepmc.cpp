@@ -42,7 +42,8 @@ namespace examples {
     double const B = 2. * (enu + mn);
     double const C = mn * mn - mp * mp + mmu * mmu + 2. * enu * mn;
     double const D = B * B - A * A;
-    // The "+" root is physical; the "-" root fails B*Emu - C >= 0 (spurious from squaring).
+    // Using the signed A (cos(theta) < 0 above 90 degrees) picks the physical root at
+    // any angle: A*pmu = B*Emu - C must have A's sign, which the other root violates.
     double const emu = (B * C + A * std::sqrt(C * C - mmu * mmu * D)) / D;
 
     double const pmu = std::sqrt(emu * emu - mmu * mmu);
